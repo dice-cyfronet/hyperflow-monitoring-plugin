@@ -1,0 +1,23 @@
+{
+  "name": "hyperflow-monitoring-plugin",
+  "version": "0.1.0",
+  "description": "Hyperflow monitoring plugin",
+  "main": "index.js",
+  "scripts": {
+    "test": ""
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/dice-cyfronet/hyperflow-monitoring-plugin.git"
+  },
+  "keywords": [
+    "hyperflow",
+    "hyperflow-plugin"
+  ],
+  "author": "Maciej Pawlik <m.pawlik@cyfronet.pl>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/dice-cyfronet/hyperflow-monitoring-plugin/issues"
+  },
+  "homepage": "https://github.com/dice-cyfronet/hyperflow-monitoring-plugin"
+}
