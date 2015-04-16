@@ -1,5 +1,5 @@
 var net = require('net');
-var config = require('hyperflowMonitoringPlugin.config.js');
+var config = require('./hyperflowMonitoringPlugin.config.js');
 
 var MonitoringPlugin = function () {
 };
