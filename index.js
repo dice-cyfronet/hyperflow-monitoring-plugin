@@ -14,14 +14,35 @@ MonitoringPlugin.prototype.sendMetrics = function () {
         port = parseInt(parts[1]);
     }
     var client = net.connect({host: host, port: port}, function () {
-        var metricReport = config.serverName + ' nTasksLeft ' + that.getTasksLeft() + ' ' + parseInt(Date.now() / 1000) + '\r\n';
-        client.write(metricReport);
+        var timestamp = parseInt(Date.now() / 1000);
+
+        var tasksLeft =         config.serverName + ' nTasksLeft '      + that.getTasksLeft() + ' ' + timestamp + '\r\n';
+        var outputsLeft =       config.serverName + ' nOutputsLeft '    + that.getOutputsLeft() + ' ' + timestamp + '\r\n';
+        var tasksProcessed =    config.serverName + ' nTasksProcessed ' + that.getTasksProcessed() + ' ' + timestamp + '\r\n';
+        var tasks =             config.serverName + ' nTasks '          + that.getTasks() + ' ' + timestamp + '\r\n';
+
+        client.write(tasksLeft);
+        client.write(outputsLeft);
+        client.write(tasksProcessed);
+        client.write(tasks);
         client.destroy();
     });
 };
 
 MonitoringPlugin.prototype.getTasksLeft = function () {
     return this.engine.nTasksLeft;
+};
+
+MonitoringPlugin.prototype.getOutputsLeft = function () {
+    return this.engine.nWfOutsLeft;
+};
+
+MonitoringPlugin.prototype.getTasksProcessed = function () {
+    return this.engine.trace.split(',').length;
+};
+
+MonitoringPlugin.prototype.getTasks = function () {
+    return this.engine.tasks.length;
 };
 
 MonitoringPlugin.prototype.init = function (rcl, wflib, engine) {
