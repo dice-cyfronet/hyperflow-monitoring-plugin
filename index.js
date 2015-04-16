@@ -9,7 +9,10 @@ MonitoringPlugin.prototype.sendMetrics = function () {
     //TODO: Create connection once and then try to reuse it
     var parts = config.metricCollector.split(':');
     var host = parts[0];
-    var port = parts[1];
+    var port = 9001;
+    if (parts.length > 1) {
+        port = parseInt(parts[1]);
+    }
     var client = net.connect({host: host, port: port}, function () {
         var metricReport = config.serverName + ' nTasksLeft ' + that.getTasksLeft() + ' ' + parseInt(Date.now() / 1000) + '\r\n';
         client.write(metricReport);
