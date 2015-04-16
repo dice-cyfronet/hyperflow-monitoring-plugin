@@ -1,7 +1,5 @@
 var net = require('net');
-
-var METRIC_COLLECTOR = 'localhost:9001';
-var SERVER = 'HyperFlow';
+var config = require ('hyperflowMonitoringPlugin.config.js');
 
 var MonitoringPlugin = function () {
 };
@@ -9,8 +7,11 @@ var MonitoringPlugin = function () {
 MonitoringPlugin.prototype.sendMetrics = function () {
     var that = this;
     //TODO: Create connection once and then try to reuse it
-    var client = net.connect({host: 'localhost', port: 9001}, function () {
-        var metricReport = SERVER + ' nTasksLeft ' + that.getTasksLeft() + ' ' + parseInt(Date.now()/1000) + '\r\n';
+    var parts = config.metricCollector.split(':');
+    var host = parts[0];
+    var port = parts[1];
+    var client = net.connect({host: host, port: port}, function () {
+        var metricReport = config.serverName + ' nTasksLeft ' + that.getTasksLeft() + ' ' + parseInt(Date.now()/1000) + '\r\n';
         client.write(metricReport);
         client.destroy();
     });
