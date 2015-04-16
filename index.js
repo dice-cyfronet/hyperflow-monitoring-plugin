@@ -1,5 +1,5 @@
 var net = require('net');
-var config = require ('hyperflowMonitoringPlugin.config.js');
+var config = require('hyperflowMonitoringPlugin.config.js');
 
 var MonitoringPlugin = function () {
 };
@@ -11,7 +11,7 @@ MonitoringPlugin.prototype.sendMetrics = function () {
     var host = parts[0];
     var port = parts[1];
     var client = net.connect({host: host, port: port}, function () {
-        var metricReport = config.serverName + ' nTasksLeft ' + that.getTasksLeft() + ' ' + parseInt(Date.now()/1000) + '\r\n';
+        var metricReport = config.serverName + ' nTasksLeft ' + that.getTasksLeft() + ' ' + parseInt(Date.now() / 1000) + '\r\n';
         client.write(metricReport);
         client.destroy();
     });
