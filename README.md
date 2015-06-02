@@ -21,6 +21,11 @@ development it's most convenient to have `hyperflow-monitoring-plugin` cloned in
 development)
 * do `npm install hyperflow-monitoring-plugin` in $HOME
 
+### check configuration
+
+The plugin requires a proper config, it needs to know where to find a metric collector and a rabbitmq-server. All values
+ can be set by environment variables. RabbitMQ needs to have rest interface enabled.
+
 ### start workflow
 In HyperFlow directory:
 `./bin/hflow run examples/Montage143/workflow.json -s -p hyperflow-monitoring-plugin`
