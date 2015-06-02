@@ -33,17 +33,34 @@ MonitoringPlugin.prototype.sendMetrics = function () {
             var outputsLeft = config.serverName + ' nOutputsLeft ' + that.getOutputsLeft() + ' ' + timestamp + '\r\n';
             var tasksProcessed = config.serverName + ' nTasksProcessed ' + that.getTasksProcessed() + ' ' + timestamp + '\r\n';
             var tasks = config.serverName + ' nTasks ' + that.getTasks() + ' ' + timestamp + '\r\n';
+            var stage = config.serverName + ' stage ' + that.getStage() + ' ' + timestamp + '\r\n';
 
             client.write(tasksLeft);
             client.write(outputsLeft);
             client.write(tasksProcessed);
             client.write(tasks);
+            client.write(stage);
             if (consumers !== null) {
                 client.write(consumers);
             }
             client.destroy();
         });
     });
+};
+
+MonitoringPlugin.prototype.getStage = function () {
+    var level = 0;
+    this.engine.tasks.forEach(function(task) {
+        if(task.logic.firingId != 0) {
+            var taskLevel = task.logic.fullInfo.level;
+            if(taskLevel !== undefined) {
+                if (level < taskLevel) {
+                    level = taskLevel;
+                }
+            }
+        }
+    });
+    return level;
 };
 
 MonitoringPlugin.prototype.getTasksLeft = function () {
