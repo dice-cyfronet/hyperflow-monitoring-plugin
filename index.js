@@ -24,7 +24,8 @@ MonitoringPlugin.prototype.sendMetrics = function () {
         if (!err) {
             consumers = config.serverName + ' nConsumers ' + consumersCount + ' ' + timestamp + '\r\n';
         } else {
-            console.log(err);
+            //probabbly rabbit is down, silently ignore
+            //console.log(err);
         }
 
         var client = net.connect({host: host, port: port}, function () {
@@ -114,6 +115,8 @@ MonitoringPlugin.prototype.getConsumersCount = function (cb) {
         }).on('error', function (e) {
             cb(e);
         });
+    }).on('error', function (e) {
+        cb(e);
     });
     request.end();
 };
