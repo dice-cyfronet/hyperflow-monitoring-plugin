@@ -1,4 +1,6 @@
 var net = require('net');
+var http = require('http');
+var url = require('url');
 var config = require('./hyperflowMonitoringPlugin.config.js');
 
 var MonitoringPlugin = function () {
@@ -13,19 +15,34 @@ MonitoringPlugin.prototype.sendMetrics = function () {
     if (parts.length > 1) {
         port = parseInt(parts[1]);
     }
-    var client = net.connect({host: host, port: port}, function () {
+
+    //TODO: change to waterfall
+    that.getConsumersCount(function (err, consumersCount) {
         var timestamp = parseInt(Date.now() / 1000);
 
-        var tasksLeft =         config.serverName + ' nTasksLeft '      + that.getTasksLeft() + ' ' + timestamp + '\r\n';
-        var outputsLeft =       config.serverName + ' nOutputsLeft '    + that.getOutputsLeft() + ' ' + timestamp + '\r\n';
-        var tasksProcessed =    config.serverName + ' nTasksProcessed ' + that.getTasksProcessed() + ' ' + timestamp + '\r\n';
-        var tasks =             config.serverName + ' nTasks '          + that.getTasks() + ' ' + timestamp + '\r\n';
+        var consumers = null;
+        if (!err) {
+            consumers = config.serverName + ' nConsumers ' + consumersCount + ' ' + timestamp + '\r\n';
+        } else {
+            console.log(err);
+        }
 
-        client.write(tasksLeft);
-        client.write(outputsLeft);
-        client.write(tasksProcessed);
-        client.write(tasks);
-        client.destroy();
+        var client = net.connect({host: host, port: port}, function () {
+
+            var tasksLeft = config.serverName + ' nTasksLeft ' + that.getTasksLeft() + ' ' + timestamp + '\r\n';
+            var outputsLeft = config.serverName + ' nOutputsLeft ' + that.getOutputsLeft() + ' ' + timestamp + '\r\n';
+            var tasksProcessed = config.serverName + ' nTasksProcessed ' + that.getTasksProcessed() + ' ' + timestamp + '\r\n';
+            var tasks = config.serverName + ' nTasks ' + that.getTasks() + ' ' + timestamp + '\r\n';
+
+            client.write(tasksLeft);
+            client.write(outputsLeft);
+            client.write(tasksProcessed);
+            client.write(tasks);
+            if (consumers !== null) {
+                client.write(consumers);
+            }
+            client.destroy();
+        });
     });
 };
 
@@ -43,6 +60,45 @@ MonitoringPlugin.prototype.getTasksProcessed = function () {
 
 MonitoringPlugin.prototype.getTasks = function () {
     return this.engine.tasks.length;
+};
+
+MonitoringPlugin.prototype.getConsumersCount = function (cb) {
+    //query rabbitmq for consumers no. on hyperflow.jobs, resutn null if anything goes wrong
+
+    var amqpUrl = url.parse(config.amqpURL);
+    var user = config.rabbitmqUser;
+    var password = config.rabbitmqPassword;
+
+    var options = {
+        method: 'GET',
+        hostname: amqpUrl.hostname,
+        port: 15672,
+        path: '/api/queues',
+        auth: user + ':' + password
+    };
+
+    var request = http.request(options, function (res) {
+        var data = '';
+        res.on('data', function (chunk) {
+            data += chunk;
+        }).on('end', function () {
+            var consumers = null;
+            var queues = JSON.parse(data);
+            queues.forEach(function (queue) {
+                if (queue.name == 'hyperflow.jobs') {
+                    consumers = queue.consumers;
+                }
+            });
+            if (consumers !== null) {
+                cb(null, consumers);
+            } else {
+                cb(new Error('no consumer data for hyperflow.jobs'));
+            }
+        }).on('error', function (e) {
+            cb(e);
+        });
+    });
+    request.end();
 };
 
 MonitoringPlugin.prototype.init = function (rcl, wflib, engine) {
