@@ -28,7 +28,7 @@ MonitoringPlugin.prototype.sendMetrics = function () {
             //console.log(err);
         }
 
-        var client = net.connect({host: host, port: port}, function () {
+        var client = net.createConnection({host: host, port: port}, function () {
 
             var tasksLeft = config.serverName + ' nTasksLeft ' + that.getTasksLeft() + ' ' + timestamp + '\r\n';
             var outputsLeft = config.serverName + ' nOutputsLeft ' + that.getOutputsLeft() + ' ' + timestamp + '\r\n';
@@ -44,7 +44,10 @@ MonitoringPlugin.prototype.sendMetrics = function () {
             if (consumers !== null) {
                 client.write(consumers);
             }
-            client.destroy();
+            client.end();
+        });
+        client.on('error', function() {
+            console.log('Monitoring plugin is unable to connect to: ' + config.metricCollector);
         });
     });
 };
