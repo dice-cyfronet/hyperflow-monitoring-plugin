@@ -22,7 +22,7 @@ MonitoringPlugin.prototype.sendMetrics = function () {
 
         var consumers = null;
         if (!err) {
-            consumers = config.serverName + ' nConsumers ' + consumersCount + ' ' + timestamp + '\r\n';
+            consumers = config.serverName + '.nConsumers ' + consumersCount + ' ' + timestamp + '\r\n';
         } else {
             //probabbly rabbit is down, silently ignore
             //console.log(err);
@@ -30,11 +30,11 @@ MonitoringPlugin.prototype.sendMetrics = function () {
 
         var client = net.createConnection({host: host, port: port}, function () {
 
-            var tasksLeft = config.serverName + ' nTasksLeft ' + that.getTasksLeft() + ' ' + timestamp + '\r\n';
-            var outputsLeft = config.serverName + ' nOutputsLeft ' + that.getOutputsLeft() + ' ' + timestamp + '\r\n';
-            var tasksProcessed = config.serverName + ' nTasksProcessed ' + that.getTasksProcessed() + ' ' + timestamp + '\r\n';
-            var tasks = config.serverName + ' nTasks ' + that.getTasks() + ' ' + timestamp + '\r\n';
-            var stage = config.serverName + ' stage ' + that.getStage() + ' ' + timestamp + '\r\n';
+            var tasksLeft = config.serverName + '.nTasksLeft ' + that.getTasksLeft() + ' ' + timestamp + '\r\n';
+            var outputsLeft = config.serverName + '.nOutputsLeft ' + that.getOutputsLeft() + ' ' + timestamp + '\r\n';
+            var tasksProcessed = config.serverName + '.nTasksProcessed ' + that.getTasksProcessed() + ' ' + timestamp + '\r\n';
+            var tasks = config.serverName + '.nTasks ' + that.getTasks() + ' ' + timestamp + '\r\n';
+            var stage = config.serverName + '.stage ' + that.getStage() + ' ' + timestamp + '\r\n';
 
             client.write(tasksLeft);
             client.write(outputsLeft);
