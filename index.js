@@ -11,7 +11,7 @@ MonitoringPlugin.prototype.sendMetrics = function () {
     //TODO: Create connection once and then try to reuse it
     var parts = config.metricCollector.split(':');
     var host = parts[0];
-    var port = 9001;
+    var port = 9002;
     if (parts.length > 1) {
         port = parseInt(parts[1]);
     }

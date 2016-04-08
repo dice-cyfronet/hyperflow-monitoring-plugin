@@ -8,7 +8,7 @@ you need this branch).
 ## Usage
 
 ### start a dummy message aggregator
-`while :; do nc -l -p 9001; done`
+`while :; do nc -l -p 9002; done`
 
 `while` is required because nc exits after the connection is closed, current version of plugin sends each message in a
 separate connection.
