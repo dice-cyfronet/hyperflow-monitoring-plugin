@@ -51,10 +51,10 @@ MonitoringPlugin.prototype.sendMetrics = function () {
 
 MonitoringPlugin.prototype.getStage = function () {
     var level = 0;
-    this.engine.tasks.forEach(function(task) {
-        if(task.logic.firingId != 0) {
+    this.engine.tasks.forEach(function (task) {
+        if (task.logic.firingId != 0) {
             var taskLevel = task.logic.fullInfo.level;
-            if(taskLevel !== undefined) {
+            if (taskLevel !== undefined) {
                 if (level < taskLevel) {
                     level = taskLevel;
                 }
