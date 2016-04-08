@@ -81,7 +81,7 @@ MonitoringPlugin.prototype.getTasks = function () {
 };
 
 MonitoringPlugin.prototype.getConsumersCount = function (cb) {
-    //query rabbitmq for consumers no. on hyperflow.jobs, resutn null if anything goes wrong
+    //query rabbitmq for consumers no. on hyperflow.jobs, return null if anything goes wrong
 
     var amqpUrl = url.parse(config.amqpURL);
     var user = config.rabbitmqUser;
