@@ -2,7 +2,7 @@
 
 ## Description
 
-This is a simple monitoring plugin for HyperFlow (https://github.com/dice-cyfronet/hyperflow/tree/feature/plugins <- 
+This is a simple monitoring plugin for HyperFlow (https://github.com/dice-cyfronet/hyperflow/tree/develop <- 
 you need this branch).
 
 ## Usage
