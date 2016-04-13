@@ -20,9 +20,9 @@ MonitoringPlugin.prototype.sendMetrics = function () {
     that.getConsumersCount(function (err, consumersCount) {
         var timestamp = parseInt(Date.now() / 1000);
 
-        var consumers = null;
+        var consumers = -1;
         if (!err) {
-            consumers = config.serverName + '.nConsumers ' + consumersCount + ' ' + timestamp + '\r\n';
+            consumers = consumersCount;
         } else {
             //probabbly rabbit is down, silently ignore
             //console.log(err);
@@ -42,15 +42,14 @@ MonitoringPlugin.prototype.sendMetrics = function () {
                 var tasksProcessedText = config.serverName + '.nTasksProcessed ' + tasksProcessed + ' ' + timestamp + '\r\n';
                 var tasksText = config.serverName + '.nTasks ' + tasks + ' ' + timestamp + '\r\n';
                 var stageText = config.serverName + '.stage ' + stage + ' ' + timestamp + '\r\n';
+                var consumersText = config.serverName + '.nConsumers ' + consumers + ' ' + timestamp + '\r\n';
 
                 client.write(tasksLeftText);
                 client.write(outputsLeftText);
                 client.write(tasksProcessedText);
                 client.write(tasksText);
                 client.write(stageText);
-                if (consumers !== null) {
-                    client.write(consumers);
-                }
+                client.write(consumers);
                 client.end();
             });
             client.on('error', function () {
