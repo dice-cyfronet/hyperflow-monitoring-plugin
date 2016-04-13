@@ -28,20 +28,26 @@ MonitoringPlugin.prototype.sendMetrics = function () {
             //console.log(err);
         }
 
-        var tasksLeft = config.serverName + '.nTasksLeft ' + that.getTasksLeft() + ' ' + timestamp + '\r\n';
-        var outputsLeft = config.serverName + '.nOutputsLeft ' + that.getOutputsLeft() + ' ' + timestamp + '\r\n';
-        var tasksProcessed = config.serverName + '.nTasksProcessed ' + that.getTasksProcessed() + ' ' + timestamp + '\r\n';
-        var tasks = config.serverName + '.nTasks ' + that.getTasks() + ' ' + timestamp + '\r\n';
-        var stage = config.serverName + '.stage ' + that.getStage() + ' ' + timestamp + '\r\n';
+        var tasksLeft = that.getTasksLeft();
+        var outputsLeft = that.getOutputsLeft();
+        var tasksProcessed = that.getTasksProcessed();
+        var tasks = that.getTasks();
+        var stage = that.getStage();
 
         if (config.metricCollectorType == 'visor') {
             var client = net.createConnection({host: host, port: port}, function () {
 
-                client.write(tasksLeft);
-                client.write(outputsLeft);
-                client.write(tasksProcessed);
-                client.write(tasks);
-                client.write(stage);
+                var tasksLeftText = config.serverName + '.nTasksLeft ' + tasksLeft + ' ' + timestamp + '\r\n';
+                var outputsLeftText = config.serverName + '.nOutputsLeft ' + outputsLeft + ' ' + timestamp + '\r\n';
+                var tasksProcessedText = config.serverName + '.nTasksProcessed ' + tasksProcessed + ' ' + timestamp + '\r\n';
+                var tasksText = config.serverName + '.nTasks ' + tasks + ' ' + timestamp + '\r\n';
+                var stageText = config.serverName + '.stage ' + stage + ' ' + timestamp + '\r\n';
+
+                client.write(tasksLeftText);
+                client.write(outputsLeftText);
+                client.write(tasksProcessedText);
+                client.write(tasksText);
+                client.write(stageText);
                 if (consumers !== null) {
                     client.write(consumers);
                 }
