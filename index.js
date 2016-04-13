@@ -21,7 +21,7 @@ MonitoringPlugin.prototype.sendMetrics = function () {
         var timestamp = parseInt(Date.now() / 1000);
 
         var consumers = -1;
-        if (!err) {
+        if (!err && consumersCount != undefined) {
             consumers = consumersCount;
         } else {
             //probabbly rabbit is down, silently ignore
