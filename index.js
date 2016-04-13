@@ -62,7 +62,7 @@ MonitoringPlugin.prototype.sendMetrics = function () {
                 'tasksProcessed': tasksProcessed,
                 'tasks': tasks,
                 'stage': stage,
-                'consumersCount': consumersCount
+                'consumersCount': consumers
             };
             that.writeToInfluxDB(metrics, function (err) {
                 if (err) {
