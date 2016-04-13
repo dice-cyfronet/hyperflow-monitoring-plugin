@@ -60,6 +60,10 @@ MonitoringPlugin.prototype.sendMetrics = function () {
                 'consumersCount': consumersCount
             };
             that.writeToInfluxDB(metrics, function (err) {
+                if (err) {
+                    console.log("error writting to influxdb!");
+                    console.log(err);
+                }
             });
         } else {
             console.log('Monitoring plugin is unable to write to unknown metric collector type: ' + config.metricCollectorType);
