@@ -178,7 +178,6 @@ MonitoringPlugin.prototype.getConsumersCount = function (cb) {
     }).on('error', function (e) {
         cb(e);
     });
-    request.write(data);
     request.end();
 };
 
