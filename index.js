@@ -138,6 +138,8 @@ MonitoringPlugin.prototype.writeToInfluxDB = function (metrics, cb) {
     request.on('error', function (e) {
         cb(e);
     });
+    request.write(data);
+    request.end();
 };
 
 MonitoringPlugin.prototype.getConsumersCount = function (cb) {
