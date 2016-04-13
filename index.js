@@ -28,27 +28,42 @@ MonitoringPlugin.prototype.sendMetrics = function () {
             //console.log(err);
         }
 
-        var client = net.createConnection({host: host, port: port}, function () {
+        var tasksLeft = config.serverName + '.nTasksLeft ' + that.getTasksLeft() + ' ' + timestamp + '\r\n';
+        var outputsLeft = config.serverName + '.nOutputsLeft ' + that.getOutputsLeft() + ' ' + timestamp + '\r\n';
+        var tasksProcessed = config.serverName + '.nTasksProcessed ' + that.getTasksProcessed() + ' ' + timestamp + '\r\n';
+        var tasks = config.serverName + '.nTasks ' + that.getTasks() + ' ' + timestamp + '\r\n';
+        var stage = config.serverName + '.stage ' + that.getStage() + ' ' + timestamp + '\r\n';
 
-            var tasksLeft = config.serverName + '.nTasksLeft ' + that.getTasksLeft() + ' ' + timestamp + '\r\n';
-            var outputsLeft = config.serverName + '.nOutputsLeft ' + that.getOutputsLeft() + ' ' + timestamp + '\r\n';
-            var tasksProcessed = config.serverName + '.nTasksProcessed ' + that.getTasksProcessed() + ' ' + timestamp + '\r\n';
-            var tasks = config.serverName + '.nTasks ' + that.getTasks() + ' ' + timestamp + '\r\n';
-            var stage = config.serverName + '.stage ' + that.getStage() + ' ' + timestamp + '\r\n';
+        if (config.metricCollectorType == 'visor') {
+            var client = net.createConnection({host: host, port: port}, function () {
 
-            client.write(tasksLeft);
-            client.write(outputsLeft);
-            client.write(tasksProcessed);
-            client.write(tasks);
-            client.write(stage);
-            if (consumers !== null) {
-                client.write(consumers);
-            }
-            client.end();
-        });
-        client.on('error', function() {
-            console.log('Monitoring plugin is unable to connect to: ' + config.metricCollector);
-        });
+                client.write(tasksLeft);
+                client.write(outputsLeft);
+                client.write(tasksProcessed);
+                client.write(tasks);
+                client.write(stage);
+                if (consumers !== null) {
+                    client.write(consumers);
+                }
+                client.end();
+            });
+            client.on('error', function () {
+                console.log('Monitoring plugin is unable to connect to: ' + config.metricCollector);
+            });
+        } else if (config.metricCollectorType == 'influxdb') {
+            var metrics = {
+                'tasksLeft': tasksLeft,
+                'outputsLeft': outputsLeft,
+                'tasksProcessed': tasksProcessed,
+                'tasks': tasks,
+                'stage': stage,
+                'consumersCount': consumersCount
+            };
+            this.writeToInfluxDB(metrics, function (err) {
+            });
+        } else {
+            console.log('Monitoring plugin is unable to write to unknown metric collector type: ' + config.metricCollectorType);
+        }
     });
 };
 
@@ -81,6 +96,39 @@ MonitoringPlugin.prototype.getTasksProcessed = function () {
 
 MonitoringPlugin.prototype.getTasks = function () {
     return this.engine.tasks.length;
+};
+
+MonitoringPlugin.prototype.writeToInfluxDB = function (metrics, cb) {
+    var influxdbUrl = url.parse(config.metricCollector);
+    var data = 'hyperflow ';
+    var metric_items = [];
+    for (field in metrics) {
+        if (metrics.hasOwnProperty(field)) {
+            metric_items.push(field + '=' + metrics[field]);
+        }
+    }
+
+    data += metric_items.join(',');
+
+    request = http.request({
+        hostname: influxdbUrl.hostname,
+        port: influxdbUrl.port,
+        path: 'write?db=hyperflow',
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'Content-Length': data.length
+        }
+    }, function (res) {
+        if (res.statusCode != 204) {
+            cb(new Error('Error, response of the server was: ' + res.statusCode + ' ' + res.statusMessage));
+            return;
+        }
+        cb(null);
+    });
+    request.on('error', function (e) {
+        cb(e);
+    });
 };
 
 MonitoringPlugin.prototype.getConsumersCount = function (cb) {
