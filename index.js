@@ -59,7 +59,7 @@ MonitoringPlugin.prototype.sendMetrics = function () {
                 'stage': stage,
                 'consumersCount': consumersCount
             };
-            this.writeToInfluxDB(metrics, function (err) {
+            that.writeToInfluxDB(metrics, function (err) {
             });
         } else {
             console.log('Monitoring plugin is unable to write to unknown metric collector type: ' + config.metricCollectorType);
