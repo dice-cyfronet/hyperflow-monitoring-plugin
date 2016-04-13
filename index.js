@@ -49,7 +49,7 @@ MonitoringPlugin.prototype.sendMetrics = function () {
                 client.write(tasksProcessedText);
                 client.write(tasksText);
                 client.write(stageText);
-                client.write(consumers);
+                client.write(consumersText);
                 client.end();
             });
             client.on('error', function () {
