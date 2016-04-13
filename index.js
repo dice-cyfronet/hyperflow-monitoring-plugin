@@ -129,11 +129,16 @@ MonitoringPlugin.prototype.writeToInfluxDB = function (metrics, cb) {
             'Content-Length': data.length
         }
     }, function (res) {
+        res.on('data', function () {
+        }).on('end', function () {
+            cb(null);
+        }).on('error', function (err) {
+            cb(new Error('Error, response of the server was: ' + err));
+        });
         if (res.statusCode != 204) {
             cb(new Error('Error, response of the server was: ' + res.statusCode + ' ' + res.statusMessage));
             return;
         }
-        cb(null);
     });
     request.on('error', function (e) {
         cb(e);
