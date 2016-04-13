@@ -122,7 +122,7 @@ MonitoringPlugin.prototype.writeToInfluxDB = function (metrics, cb) {
     request = http.request({
         hostname: influxdbUrl.hostname,
         port: influxdbUrl.port,
-        path: '/write?db=hyperflow',
+        path: influxdbUrl.path,
         method: 'POST',
         headers: {
             'Content-Type': 'application/x-www-form-urlencoded',
