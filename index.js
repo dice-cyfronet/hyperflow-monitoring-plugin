@@ -6,15 +6,8 @@ var config = require('./hyperflowMonitoringPlugin.config.js');
 var MonitoringPlugin = function () {
 };
 
-MonitoringPlugin.prototype.sendMetrics = function () {
+MonitoringPlugin.prototype.sendMetrics = function (collectorParams) {
     var that = this;
-    //TODO: Create connection once and then try to reuse it
-    var parts = config.metricCollector.split(':');
-    var host = parts[0];
-    var port = 9002;
-    if (parts.length > 1) {
-        port = parseInt(parts[1]);
-    }
 
     //TODO: change to waterfall
     that.getConsumersCount(function (err, consumersCount) {
@@ -35,7 +28,7 @@ MonitoringPlugin.prototype.sendMetrics = function () {
         var stage = that.getStage();
 
         if (config.metricCollectorType == 'visor') {
-            var client = net.createConnection({host: host, port: port}, function () {
+            var client = net.createConnection({host: collectorParams.host, port: collectorParams.port}, function () {
 
                 var tasksLeftText = config.serverName + '.nTasksLeft ' + tasksLeft + ' ' + timestamp + '\r\n';
                 var outputsLeftText = config.serverName + '.nOutputsLeft ' + outputsLeft + ' ' + timestamp + '\r\n';
@@ -188,6 +181,34 @@ MonitoringPlugin.prototype.getConsumersCount = function (cb) {
     request.end();
 };
 
+MonitoringPlugin.prototype.prepareCollectors = function (cb) {
+    if (config.metricCollectorType == 'visor') {
+        http.get('http://' + config.visorPublicIp + ':31415/monitors', function (res) {
+            var data = '';
+            res.on('data', function (chunk) {
+                data += chunk;
+            }).on('end', function () {
+                var monitors = JSON.parse(data);
+                var collectorParams = {};
+                data.forEach(function(monitor) {
+                    if(monitor.metric_name == "tasks") {
+                        collectorParams['port'] = monitor.port;
+                        collectorParams['host'] = config.visorCloudIp;
+                    }
+                });
+                cb(null, collectorParams);
+            }).on('error', function (e) {
+                cb(e);
+            });
+        }).on('error', function (e) {
+            cb(e);
+        });
+    } else {
+        //no collector initialization required
+        cb();
+    }
+};
+
 MonitoringPlugin.prototype.init = function (rcl, wflib, engine) {
     if (this.hasOwnProperty('initialized') && this.initialized === true) {
         return;
@@ -197,9 +218,16 @@ MonitoringPlugin.prototype.init = function (rcl, wflib, engine) {
     this.engine = engine;
 
     var that = this;
-    setInterval(function () {
-        that.sendMetrics();
-    }, 1000);
+    that.prepareCollectors(new function (err, collectorParams) {
+        if (!err) {
+            setInterval(function () {
+                that.sendMetrics(collectorParams);
+            }, 1000);
+        } else {
+            console.log('Unable to initialize collector!');
+            console.log(err);
+        }
+    });
 
     this.initialized = true;
 };
