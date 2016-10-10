@@ -34,7 +34,7 @@ VisorDestination.prototype.init = function (cb) {
     });
 };
 
-VisorDestination.prototype.handleMetrics = function (cb, metrics) {
+VisorDestination.prototype.handleMetrics = function (metrics, cb) {
     var that = this;
     var timestamp = parseInt(Date.now() / 1000);
 
@@ -67,7 +67,7 @@ InfluxDBDestination.prototype.init = function (cb) {
     cb();
 };
 
-InfluxDBDestination.prototype.handleMetrics = function (cb, metrics) {
+InfluxDBDestination.prototype.handleMetrics = function (metrics, cb) {
     var influxdbUrl = url.parse(this.influxDBURL);
     var data = 'hyperflow ';
     var metric_items = [];
@@ -130,7 +130,8 @@ MonitoringPlugin.prototype.gatherMetrics = function () {
             nConsumers: consumers
         };
 
-        that.metricDestination.handleMetrics(metrics);
+        that.metricDestination.handleMetrics(metrics, function () {
+        });
     });
 };
 
