@@ -3,16 +3,116 @@ var http = require('http');
 var url = require('url');
 var config = require('./hyperflowMonitoringPlugin.config.js');
 
+// Visor Destination
+
+var VisorDestination = function () {
+};
+
+VisorDestination.prototype.init = function (cb) {
+    var that = this;
+    that.appName = config.appName;
+
+    http.get('http://' + config.visorPublicIp + ':31415/monitors', function (res) {
+        var data = '';
+        res.on('data', function (chunk) {
+            data += chunk;
+        }).on('end', function () {
+            var monitors = JSON.parse(data);
+            data.forEach(function (monitor) {
+                if (monitor.metric_name == "tasks") {
+                    that.port = monitor.port;
+                    that.host = config.visorCloudIp;
+                    cb();
+                }
+            });
+            cb(new Error('No monitor looks like hyperflow-visor endpoint!'));
+        }).on('error', function (e) {
+            cb(e);
+        });
+    }).on('error', function (e) {
+        cb(e);
+    });
+};
+
+VisorDestination.prototype.handleMetrics = function (cb, metrics) {
+    var that = this;
+    var timestamp = parseInt(Date.now() / 1000);
+
+    var client = net.createConnection({host: that.host, port: that.port}, function () {
+
+        for (var metricName in Object.keys(metrics)) {
+            var metricLine = that.appName + '.' + metricName + ' ' + metrics[metricName] + ' ' + timestamp + '\r\n';
+            client.write(metricLine);
+        }
+        client.end();
+    });
+    client.on('error', function (err) {
+        console.log('Monitoring plugin is unable to connect to visor located at: ' + that.hostname + ':' + that.port);
+        console.log(err);
+        cb(err);
+    });
+    client.on('end', function () {
+        cb()
+    });
+};
+
+
+// InfluxDB Destination
+
+var InfluxDBDestination = function () {
+};
+
+InfluxDBDestination.prototype.init = function (cb) {
+    this.influxDBURL = config.influxDBURI;
+    cb();
+};
+
+InfluxDBDestination.prototype.handleMetrics = function (cb, metrics) {
+    var influxdbUrl = url.parse(this.influxDBURL);
+    var data = 'hyperflow ';
+    var metric_items = [];
+    for (var metricName in Object.keys(metrics)) {
+        metric_items.push(metricName + '=' + metrics[metricName]);
+    }
+
+    data += metric_items.join(',');
+
+    var request = http.request({
+        hostname: influxdbUrl.hostname,
+        port: influxdbUrl.port,
+        path: influxdbUrl.path,
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'Content-Length': data.length
+        }
+    }, function (res) {
+        res.on('data', function () {
+        }).on('end', function () {
+            cb();
+        }).on('error', function (err) {
+            cb(new Error('Error, response of the server was: ' + err));
+        });
+        if (res.statusCode != 204) {
+            cb(new Error('Error, response of the server was: ' + res.statusCode + ' ' + res.statusMessage));
+        }
+    });
+    request.on('error', function (e) {
+        cb(e);
+    });
+    request.write(data);
+    request.end();
+};
+
+// Plugin prototype
+
 var MonitoringPlugin = function () {
 };
 
-MonitoringPlugin.prototype.sendMetrics = function (collectorParams) {
+MonitoringPlugin.prototype.gatherMetrics = function () {
     var that = this;
 
-    //TODO: change to waterfall
     that.getConsumersCount(function (err, consumersCount) {
-        var timestamp = parseInt(Date.now() / 1000);
-
         var consumers = -1;
         if (!err && consumersCount != undefined) {
             consumers = consumersCount;
@@ -21,53 +121,20 @@ MonitoringPlugin.prototype.sendMetrics = function (collectorParams) {
             //console.log(err);
         }
 
-        var tasksLeft = that.getTasksLeft();
-        var outputsLeft = that.getOutputsLeft();
-        var tasksProcessed = that.getTasksProcessed();
-        var tasks = that.getTasks();
-        var stage = that.getStage();
+        var metrics = {
+            tasksLeft: that.getTasksLeft(),
+            outputsLeft: that.getOutputsLeft(),
+            tasksProcessed: that.getTasksProcessed(),
+            tasks: that.getTasks(),
+            stage: that.getStage(),
+            nConsumers: consumers
+        };
 
-        if (config.metricCollectorType == 'visor') {
-            var client = net.createConnection({host: collectorParams.host, port: collectorParams.port}, function () {
-
-                var tasksLeftText = config.appName + '.nTasksLeft ' + tasksLeft + ' ' + timestamp + '\r\n';
-                var outputsLeftText = config.appName + '.nOutputsLeft ' + outputsLeft + ' ' + timestamp + '\r\n';
-                var tasksProcessedText = config.appName + '.nTasksProcessed ' + tasksProcessed + ' ' + timestamp + '\r\n';
-                var tasksText = config.appName + '.nTasks ' + tasks + ' ' + timestamp + '\r\n';
-                var stageText = config.appName + '.stage ' + stage + ' ' + timestamp + '\r\n';
-                var consumersText = config.appName + '.nConsumers ' + consumers + ' ' + timestamp + '\r\n';
-
-                client.write(tasksLeftText);
-                client.write(outputsLeftText);
-                client.write(tasksProcessedText);
-                client.write(tasksText);
-                client.write(stageText);
-                client.write(consumersText);
-                client.end();
-            });
-            client.on('error', function () {
-                console.log('Monitoring plugin is unable to connect to: ' + config.metricCollectorUri);
-            });
-        } else if (config.metricCollectorType == 'influxdb') {
-            var metrics = {
-                'tasksLeft': tasksLeft,
-                'outputsLeft': outputsLeft,
-                'tasksProcessed': tasksProcessed,
-                'tasks': tasks,
-                'stage': stage,
-                'consumersCount': consumers
-            };
-            that.writeToInfluxDB(metrics, function (err) {
-                if (err) {
-                    console.log("error writting to influxdb!");
-                    console.log(err);
-                }
-            });
-        } else {
-            console.log('Monitoring plugin is unable to write to unknown metric collector type: ' + config.metricCollectorType);
-        }
+        that.metricDestination.handleMetrics(metrics);
     });
 };
+
+// Getters of metrics
 
 MonitoringPlugin.prototype.getStage = function () {
     var level = 0;
@@ -98,46 +165,6 @@ MonitoringPlugin.prototype.getTasksProcessed = function () {
 
 MonitoringPlugin.prototype.getTasks = function () {
     return this.engine.tasks.length;
-};
-
-MonitoringPlugin.prototype.writeToInfluxDB = function (metrics, cb) {
-    var influxdbUrl = url.parse(config.metricCollectorUri);
-    var data = 'hyperflow ';
-    var metric_items = [];
-    for (field in metrics) {
-        if (metrics.hasOwnProperty(field)) {
-            metric_items.push(field + '=' + metrics[field]);
-        }
-    }
-
-    data += metric_items.join(',');
-
-    request = http.request({
-        hostname: influxdbUrl.hostname,
-        port: influxdbUrl.port,
-        path: influxdbUrl.path,
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-            'Content-Length': data.length
-        }
-    }, function (res) {
-        res.on('data', function () {
-        }).on('end', function () {
-            cb(null);
-        }).on('error', function (err) {
-            cb(new Error('Error, response of the server was: ' + err));
-        });
-        if (res.statusCode != 204) {
-            cb(new Error('Error, response of the server was: ' + res.statusCode + ' ' + res.statusMessage));
-            return;
-        }
-    });
-    request.on('error', function (e) {
-        cb(e);
-    });
-    request.write(data);
-    request.end();
 };
 
 MonitoringPlugin.prototype.getConsumersCount = function (cb) {
@@ -181,33 +208,7 @@ MonitoringPlugin.prototype.getConsumersCount = function (cb) {
     request.end();
 };
 
-MonitoringPlugin.prototype.prepareCollectors = function (cb) {
-    if (config.metricCollectorType == 'visor') {
-        http.get('http://' + config.visorPublicIp + ':31415/monitors', function (res) {
-            var data = '';
-            res.on('data', function (chunk) {
-                data += chunk;
-            }).on('end', function () {
-                var monitors = JSON.parse(data);
-                var collectorParams = {};
-                data.forEach(function(monitor) {
-                    if(monitor.metric_name == "tasks") {
-                        collectorParams['port'] = monitor.port;
-                        collectorParams['host'] = config.visorCloudIp;
-                    }
-                });
-                cb(null, collectorParams);
-            }).on('error', function (e) {
-                cb(e);
-            });
-        }).on('error', function (e) {
-            cb(e);
-        });
-    } else {
-        //no collector initialization required
-        cb();
-    }
-};
+// Plugin initialization
 
 MonitoringPlugin.prototype.init = function (rcl, wflib, engine) {
     if (this.hasOwnProperty('initialized') && this.initialized === true) {
@@ -218,13 +219,23 @@ MonitoringPlugin.prototype.init = function (rcl, wflib, engine) {
     this.engine = engine;
 
     var that = this;
-    that.prepareCollectors(new function (err, collectorParams) {
+
+    if (config.metricCollectorType == 'visor') {
+        that.metricDestination = new VisorDestination();
+    } else if (config.metricCollectorType == 'influxdb') {
+        that.metricDestination = new InfluxDBDestination();
+    } else {
+        console.log("Unknown metric destination type!");
+        return;
+    }
+
+    that.metricDestination.init(function (err) {
         if (!err) {
             setInterval(function () {
-                that.sendMetrics(collectorParams);
+                that.gatherMetrics();
             }, 1000);
         } else {
-            console.log('Unable to initialize collector!');
+            console.log('Unable to initialize metric destination!');
             console.log(err);
         }
     });

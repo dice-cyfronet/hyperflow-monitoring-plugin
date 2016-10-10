@@ -13,7 +13,7 @@ var RABBITMQ_PASSWORD = process.env.RABBITMQ_PASSWORD ? process.env.RABBITMQ_PAS
 module.exports = {
     metricCollectorType: METRIC_COLLECTOR_TYPE,
     appName: APP_NAME,
-    metricCollectorUri: INFLUXDB_URI,
+    influxDBURI: INFLUXDB_URI,
     visorPublicIp: VISOR_PUBLIC_IP,
     visorCloudIp: VISOR_CLOUD_IP,
     rabbitMQURL: RABBITMQ_URL,
