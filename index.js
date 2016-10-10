@@ -30,12 +30,12 @@ MonitoringPlugin.prototype.sendMetrics = function (collectorParams) {
         if (config.metricCollectorType == 'visor') {
             var client = net.createConnection({host: collectorParams.host, port: collectorParams.port}, function () {
 
-                var tasksLeftText = config.serverName + '.nTasksLeft ' + tasksLeft + ' ' + timestamp + '\r\n';
-                var outputsLeftText = config.serverName + '.nOutputsLeft ' + outputsLeft + ' ' + timestamp + '\r\n';
-                var tasksProcessedText = config.serverName + '.nTasksProcessed ' + tasksProcessed + ' ' + timestamp + '\r\n';
-                var tasksText = config.serverName + '.nTasks ' + tasks + ' ' + timestamp + '\r\n';
-                var stageText = config.serverName + '.stage ' + stage + ' ' + timestamp + '\r\n';
-                var consumersText = config.serverName + '.nConsumers ' + consumers + ' ' + timestamp + '\r\n';
+                var tasksLeftText = config.appName + '.nTasksLeft ' + tasksLeft + ' ' + timestamp + '\r\n';
+                var outputsLeftText = config.appName + '.nOutputsLeft ' + outputsLeft + ' ' + timestamp + '\r\n';
+                var tasksProcessedText = config.appName + '.nTasksProcessed ' + tasksProcessed + ' ' + timestamp + '\r\n';
+                var tasksText = config.appName + '.nTasks ' + tasks + ' ' + timestamp + '\r\n';
+                var stageText = config.appName + '.stage ' + stage + ' ' + timestamp + '\r\n';
+                var consumersText = config.appName + '.nConsumers ' + consumers + ' ' + timestamp + '\r\n';
 
                 client.write(tasksLeftText);
                 client.write(outputsLeftText);
@@ -46,7 +46,7 @@ MonitoringPlugin.prototype.sendMetrics = function (collectorParams) {
                 client.end();
             });
             client.on('error', function () {
-                console.log('Monitoring plugin is unable to connect to: ' + config.metricCollector);
+                console.log('Monitoring plugin is unable to connect to: ' + config.metricCollectorUri);
             });
         } else if (config.metricCollectorType == 'influxdb') {
             var metrics = {
@@ -101,7 +101,7 @@ MonitoringPlugin.prototype.getTasks = function () {
 };
 
 MonitoringPlugin.prototype.writeToInfluxDB = function (metrics, cb) {
-    var influxdbUrl = url.parse(config.metricCollector);
+    var influxdbUrl = url.parse(config.metricCollectorUri);
     var data = 'hyperflow ';
     var metric_items = [];
     for (field in metrics) {
@@ -143,13 +143,13 @@ MonitoringPlugin.prototype.writeToInfluxDB = function (metrics, cb) {
 MonitoringPlugin.prototype.getConsumersCount = function (cb) {
     //query rabbitmq for consumers no. on hyperflow.jobs, return null if anything goes wrong
 
-    var amqpUrl = url.parse(config.amqpURL);
+    var rabbitMQURL = url.parse(config.rabbitMQURL);
     var user = config.rabbitmqUser;
     var password = config.rabbitmqPassword;
 
     var options = {
         method: 'GET',
-        hostname: amqpUrl.hostname,
+        hostname: rabbitMQURL.hostname,
         port: 15672,
         path: '/api/queues',
         auth: user + ':' + password
