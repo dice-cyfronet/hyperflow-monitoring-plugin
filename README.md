@@ -7,8 +7,13 @@ you need this branch).
 
 ## Usage
 
+### start a dummy visor server
+which responds to requests at $PUBLIC_IP:31415/monitors with visor compatible monitor data, an example is located here:
+https://gist.github.com/mpawlik/aa58841c51f10a35325f79194100425f
+monitor information should point to port specified below (host address is ignored).
+
 ### start a dummy message aggregator
-`while :; do nc -l -p 9002; done`
+`while :; do nc -l -p 49152; done`
 
 `while` is required because nc exits after the connection is closed, current version of plugin sends each message in a
 separate connection.
