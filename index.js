@@ -18,14 +18,16 @@ VisorDestination.prototype.init = function (cb) {
             data += chunk;
         }).on('end', function () {
             var monitors = JSON.parse(data);
-            data.forEach(function (monitor) {
-                if (monitor.metric_name == "tasks") {
+            monitors.forEach(function (monitor) {
+                if (monitor.metricName == "tasks") {
                     that.port = monitor.port;
                     that.host = config.visorCloudIp;
                     cb();
                 }
             });
-            cb(new Error('No monitor looks like hyperflow-visor endpoint!'));
+            if (that.port == undefined) {
+                cb(new Error('No monitor looks like hyperflow-visor endpoint!'));
+            }
         }).on('error', function (e) {
             cb(e);
         });
@@ -40,14 +42,14 @@ VisorDestination.prototype.handleMetrics = function (metrics, cb) {
 
     var client = net.createConnection({host: that.host, port: that.port}, function () {
 
-        for (var metricName in Object.keys(metrics)) {
+        Object.keys(metrics).forEach(function (metricName) {
             var metricLine = that.appName + '.' + metricName + ' ' + metrics[metricName] + ' ' + timestamp + '\r\n';
             client.write(metricLine);
-        }
+        });
         client.end();
     });
     client.on('error', function (err) {
-        console.log('Monitoring plugin is unable to connect to visor located at: ' + that.hostname + ':' + that.port);
+        console.log('Monitoring plugin is unable to connect to visor located at: ' + that.host + ':' + that.port);
         console.log(err);
         cb(err);
     });
@@ -71,9 +73,9 @@ InfluxDBDestination.prototype.handleMetrics = function (metrics, cb) {
     var influxdbUrl = url.parse(this.influxDBURL);
     var data = 'hyperflow ';
     var metric_items = [];
-    for (var metricName in Object.keys(metrics)) {
+    Object.keys(metrics).forEach(function (metricName) {
         metric_items.push(metricName + '=' + metrics[metricName]);
-    }
+    });
 
     data += metric_items.join(',');
 
