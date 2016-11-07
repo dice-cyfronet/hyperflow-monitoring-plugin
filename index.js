@@ -38,7 +38,7 @@ VisorDestination.prototype.init = function (cb) {
 
 VisorDestination.prototype.handleMetrics = function (metrics, cb) {
     var that = this;
-    var timestamp = parseInt(Date.now() / 1000);
+    var timestamp = parseInt(Date.now());
 
     var client = net.createConnection({host: that.host, port: that.port}, function () {
 
