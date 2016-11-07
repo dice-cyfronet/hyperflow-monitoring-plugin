@@ -167,7 +167,9 @@ MonitoringPlugin.prototype.getTasksProcessed = function () {
 };
 
 MonitoringPlugin.prototype.getTasks = function () {
-    return this.engine.tasks.length;
+    return this.engine.tasks.filter(function (value) {
+        return value !== undefined
+    }).length;
 };
 
 MonitoringPlugin.prototype.getConsumersCount = function (cb) {
